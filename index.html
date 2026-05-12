@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -93,6 +94,40 @@
     .editable-title:focus {
       background: rgba(255, 255, 255, 0.18);
       box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+    }
+
+    .sync-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+      border: 1px solid var(--line);
+      background: #fffdf8;
+      color: var(--muted);
+    }
+
+    .sync-status::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #c0a878;
+      display: inline-block;
+    }
+
+    .sync-status.online::before {
+      background: #4e9b64;
+    }
+
+    .sync-status.syncing::before {
+      background: #d4a017;
+    }
+
+    .sync-status.error::before {
+      background: #934343;
     }
 
     .toolbar {
@@ -728,7 +763,10 @@
       </div>
 
       <div class="toolbar">
-        <div class="hint">Haz clic en las fechas, días, nombres o lista de asistencia para editarlos. Usa la paleta de color junto a cada nombre para personalizarlo. Luego presiona <strong>Guardar cambios</strong>.</div>
+        <div>
+          <div class="hint">Haz clic en las fechas, días, nombres o lista de asistencia para editarlos. Usa la paleta de color junto a cada nombre para personalizarlo. Los cambios se sincronizan cuando Firebase está configurado.</div>
+          <div id="syncStatus" class="sync-status">Modo local: falta configurar Firebase</div>
+        </div>
         <div class="buttons">
           <button type="button" onclick="saveSchedule()">Guardar cambios</button>
           <button type="button" class="secondary" onclick="window.print()">Imprimir / PDF</button>
@@ -831,9 +869,22 @@
     </section>
   </main>
 
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
   <script>
     const STORAGE_KEY = "cronogramaClinicaCelestial";
+    const FIREBASE_PATH = "clinicaCelestial/cronogramaPrincipal";
     const serviceActivities = ["Dirección", "Lectura", "Cánticos", "Alabanzas", "Mensaje"];
+
+    const firebaseConfig = {
+      apiKey: "PEGA_AQUI_TU_API_KEY",
+      authDomain: "PEGA_AQUI_TU_AUTH_DOMAIN",
+      databaseURL: "PEGA_AQUI_TU_DATABASE_URL",
+      projectId: "PEGA_AQUI_TU_PROJECT_ID",
+      storageBucket: "PEGA_AQUI_TU_STORAGE_BUCKET",
+      messagingSenderId: "PEGA_AQUI_TU_MESSAGING_SENDER_ID",
+      appId: "PEGA_AQUI_TU_APP_ID"
+    };
 
     const defaultSchedule = {
       churchName: "Clínica Celestial",
@@ -862,6 +913,10 @@
     let attendance = createDefaultAttendance();
     let attendanceHistory = [];
     let schedule = loadData();
+    let databaseReference = null;
+    let firebaseEnabled = false;
+    let applyingRemoteData = false;
+    let saveTimer = null;
 
     function cloneData(data) {
       return JSON.parse(JSON.stringify(data));
@@ -935,13 +990,84 @@
       }
     }
 
-    function persistData() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    function getState() {
+      return {
         schedule: schedule,
         customPersonColors: customPersonColors,
         attendance: attendance,
-        attendanceHistory: attendanceHistory
-      }));
+        attendanceHistory: attendanceHistory,
+        updatedAt: Date.now()
+      };
+    }
+
+    function applyState(data) {
+      if (!data || !data.schedule) return;
+      schedule = data.schedule;
+      customPersonColors = data.customPersonColors || {};
+      attendance = normalizeAttendanceData(data.attendance);
+      attendanceHistory = Array.isArray(data.attendanceHistory) ? data.attendanceHistory : [];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
+    }
+
+    function persistData(options = {}) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(getState()));
+
+      if (!firebaseEnabled || !databaseReference || applyingRemoteData || options.localOnly) return;
+
+      setSyncStatus("Sincronizando cambios...", "syncing");
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        databaseReference.set(getState())
+          .then(() => setSyncStatus("Conectado en tiempo real", "online"))
+          .catch(() => setSyncStatus("Error al sincronizar Firebase", "error"));
+      }, 450);
+    }
+
+    function setSyncStatus(message, status = "offline") {
+      const element = document.getElementById("syncStatus");
+      if (!element) return;
+      element.textContent = message;
+      element.className = "sync-status " + status;
+    }
+
+    function isFirebaseConfigured() {
+      return firebaseConfig.apiKey &&
+        !firebaseConfig.apiKey.includes("PEGA_AQUI") &&
+        firebaseConfig.databaseURL &&
+        !firebaseConfig.databaseURL.includes("PEGA_AQUI");
+    }
+
+    function initializeFirebaseSync() {
+      if (!isFirebaseConfigured()) {
+        setSyncStatus("Modo local: pega tu configuración Firebase", "offline");
+        return;
+      }
+
+      try {
+        firebase.initializeApp(firebaseConfig);
+        databaseReference = firebase.database().ref(FIREBASE_PATH);
+        firebaseEnabled = true;
+        setSyncStatus("Conectando con Firebase...", "syncing");
+
+        databaseReference.on("value", snapshot => {
+          const remoteData = snapshot.val();
+
+          if (!remoteData) {
+            persistData();
+            return;
+          }
+
+          applyingRemoteData = true;
+          applyState(remoteData);
+          renderSchedule();
+          applyingRemoteData = false;
+          setSyncStatus("Conectado en tiempo real", "online");
+        }, () => {
+          setSyncStatus("No se pudo conectar a Firebase", "error");
+        });
+      } catch (error) {
+        setSyncStatus("Firebase no está configurado correctamente", "error");
+      }
     }
 
     function normalizePersonName(value) {
@@ -1026,6 +1152,7 @@
       if (!normalized) return;
 
       customPersonColors[normalized] = color;
+      persistData();
       renderSchedule();
     }
 
@@ -1075,6 +1202,7 @@
             picker.value = getPersonColor(currentValue);
             renderCards();
             renderAttendance();
+            persistData();
           });
 
           const picker = document.createElement("input");
@@ -1260,10 +1388,13 @@
           observation: row.querySelector(".attendance-observation")?.value.trim() || ""
         };
       });
+
+      persistData();
     }
 
     function clearServiceRegister() {
       attendance = createDefaultAttendance();
+      persistData();
       renderAttendance();
     }
 
@@ -1341,6 +1472,8 @@
         input.addEventListener("input", updateFromInputs);
       });
 
+      document.getElementById("churchName").removeEventListener("input", updateFromInputs);
+      document.getElementById("subtitle").removeEventListener("input", updateFromInputs);
       document.getElementById("churchName").addEventListener("input", updateFromInputs);
       document.getElementById("subtitle").addEventListener("input", updateFromInputs);
     }
@@ -1360,6 +1493,7 @@
 
       updateAttendanceFromInputs();
       renderCards();
+      persistData();
     }
 
     function saveSchedule() {
@@ -1367,7 +1501,7 @@
       updateAttendanceFromInputs();
       persistData();
       renderDashboard();
-      alert("Cronograma, colores y cuadrante de asistencia guardados correctamente.");
+      alert(firebaseEnabled ? "Cambios sincronizados en Firebase correctamente." : "Guardado localmente. Configura Firebase para sincronizar en tiempo real.");
     }
 
     function resetSchedule() {
@@ -1379,10 +1513,12 @@
       attendanceHistory = [];
       customPersonColors = {};
       localStorage.removeItem(STORAGE_KEY);
+      persistData();
       renderSchedule();
     }
 
     renderSchedule();
+    initializeFirebaseSync();
   </script>
 </body>
 </html>
