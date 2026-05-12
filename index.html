@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cronograma semanal de servicios - Clínica Celestial</title>
+  <style>
+    :root {
+      --bg: #f7f4ec;
+      --paper: #fffdf8;
+      --primary: #7a4d16;
+      --secondary: #b8872f;
+      --accent: #2f6f73;
+      --soft: #efe3c5;
+      --line: #dbc898;
+      --text: #2f2416;
+      --muted: #75644c;
+      --danger: #934343;
+      --shadow: 0 18px 45px rgba(72, 50, 15, 0.16);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(184, 135, 47, 0.24), transparent 32%),
+        linear-gradient(135deg, #f7f4ec 0%, #efe6d2 48%, #f9f5e9 100%);
+      color: var(--text);
+      padding: 28px;
+    }
+
+    .app {
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .panel {
+      background: rgba(255, 253, 248, 0.96);
+      border: 1px solid rgba(184, 135, 47, 0.35);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .hero {
+      position: relative;
+      padding: 34px 28px 28px;
+      text-align: center;
+      background:
+        linear-gradient(135deg, rgba(122, 77, 22, 0.96), rgba(184, 135, 47, 0.92)),
+        url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 10v60M18 34h44' stroke='rgba(255,255,255,0.18)' stroke-width='3'/%3E%3C/svg%3E");
+      color: white;
+    }
+
+    .church-icon {
+      width: 70px;
+      height: 70px;
+      margin: 0 auto 12px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      font-size: 38px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 46px);
+      letter-spacing: 0.4px;
+      line-height: 1.05;
+      text-transform: uppercase;
+    }
+
+    .hero p {
+      margin: 12px auto 0;
+      max-width: 760px;
+      font-size: 17px;
+      opacity: 0.94;
+    }
+
+    .editable-title {
+      outline: none;
+      border-radius: 12px;
+      padding: 2px 8px;
+    }
+
+    .editable-title:focus {
+      background: rgba(255, 255, 255, 0.18);
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 22px;
+      background: #fff8e8;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .toolbar .hint {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-weight: 700;
+      cursor: pointer;
+      color: white;
+      background: var(--accent);
+      box-shadow: 0 8px 18px rgba(47, 111, 115, 0.18);
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      opacity: 0.93;
+    }
+
+    button.secondary {
+      background: var(--secondary);
+    }
+
+    button.danger {
+      background: var(--danger);
+    }
+
+    .content {
+      padding: 24px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: white;
+    }
+
+    table {
+      width: 100%;
+      min-width: 880px;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 12px 10px;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #f3e4bd;
+      color: var(--primary);
+      font-size: 15px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .activity {
+      width: 170px;
+      text-align: left;
+      font-weight: 800;
+      color: var(--primary);
+      background: #fff7e4;
+    }
+
+    .date-cell {
+      background: #fffdf8;
+    }
+
+    .day-input,
+    .date-input,
+    .name-input {
+      width: 100%;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      padding: 9px 8px;
+      font: inherit;
+      color: var(--text);
+      background: transparent;
+      text-align: center;
+      outline: none;
+    }
+
+    .date-input {
+      font-weight: 800;
+      color: var(--primary);
+      font-size: 18px;
+    }
+
+    .day-input {
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .person-cell {
+      background: var(--person-bg, #fffaf0);
+      transition: background 0.2s ease;
+    }
+
+    .name-input {
+      background: var(--person-bg, #fffaf0);
+      border-color: var(--person-border, transparent);
+      font-weight: 700;
+      color: #2d2417;
+      box-shadow: inset 0 0 0 999px rgba(255, 255, 255, 0.18);
+    }
+
+    .person-field {
+      display: grid;
+      grid-template-columns: 1fr 38px;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .color-picker {
+      width: 38px;
+      height: 38px;
+      padding: 2px;
+      border: 2px solid var(--person-border, #dbc898);
+      border-radius: 12px;
+      background: white;
+      cursor: pointer;
+    }
+
+    .color-picker::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+
+    .color-picker::-webkit-color-swatch {
+      border: none;
+      border-radius: 8px;
+    }
+
+    .person-cell:hover .name-input {
+      box-shadow: 0 0 0 3px var(--person-ring, rgba(184, 135, 47, 0.18));
+    }
+
+    .name-input:focus,
+    .date-input:focus,
+    .day-input:focus {
+      background: white;
+      border-color: var(--secondary);
+      box-shadow: 0 0 0 3px rgba(184, 135, 47, 0.18);
+    }
+
+    .message-row td:not(.activity) .name-input {
+      color: var(--primary);
+      font-weight: 800;
+    }
+
+    .cards {
+      display: none;
+      margin-top: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(235px, 1fr));
+      gap: 16px;
+    }
+
+    .service-card {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      overflow: hidden;
+      background: #fffdf8;
+      box-shadow: 0 12px 28px rgba(72, 50, 15, 0.08);
+    }
+
+    .service-card header {
+      padding: 16px;
+      color: white;
+      background: linear-gradient(135deg, var(--accent), #23575a);
+    }
+
+    .service-card h3 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .service-card small {
+      display: block;
+      margin-top: 4px;
+      opacity: 0.88;
+      font-weight: 700;
+    }
+
+    .service-card ul {
+      list-style: none;
+      margin: 0;
+      padding: 14px 16px 18px;
+    }
+
+    .service-card li {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      border-radius: 14px;
+      border: 1px solid var(--person-border, rgba(122, 77, 22, 0.18));
+      background: var(--person-bg, #fffaf0);
+    }
+
+    .service-card li:last-child {
+      margin-bottom: 0;
+    }
+
+    .service-card strong {
+      color: var(--primary);
+    }
+
+    .attendance-section {
+      margin-top: 26px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: linear-gradient(135deg, #fffdf8, #fff7e4);
+      box-shadow: 0 12px 28px rgba(72, 50, 15, 0.08);
+    }
+
+    .attendance-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .attendance-title h2 {
+      margin: 0;
+      color: var(--primary);
+      font-size: clamp(22px, 3vw, 30px);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .attendance-title p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .attendance-date-box {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: white;
+      color: var(--primary);
+      font-weight: 800;
+    }
+
+    .attendance-date-box input {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 9px 10px;
+      font: inherit;
+      color: var(--text);
+      outline: none;
+      background: #fffdf8;
+    }
+
+    .attendance-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .attendance-card {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      overflow: hidden;
+      background: #fffdf8;
+      box-shadow: 0 10px 24px rgba(72, 50, 15, 0.08);
+    }
+
+    .attendance-card-row {
+      display: grid;
+      grid-template-columns: 190px 1.1fr 160px 1fr;
+      gap: 12px;
+      align-items: center;
+      padding: 18px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .attendance-card-row:last-child {
+      border-bottom: 0;
+    }
+
+    .attendance-activity-label {
+      font-weight: 900;
+      color: var(--primary);
+      font-size: 20px;
+    }
+
+    .attendance-input,
+    .attendance-select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font: inherit;
+      color: var(--text);
+      background: #fffdf8;
+      outline: none;
+    }
+
+    .attendance-input:focus,
+    .attendance-select:focus,
+    .attendance-date-box input:focus {
+      border-color: var(--secondary);
+      box-shadow: 0 0 0 3px rgba(184, 135, 47, 0.18);
+    }
+
+    @media (max-width: 900px) {
+      .attendance-card-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .dashboard-section {
+      margin-top: 26px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: #fffdf8;
+      box-shadow: 0 12px 28px rgba(72, 50, 15, 0.08);
+    }
+
+    .dashboard-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .dashboard-title h2 {
+      margin: 0;
+      color: var(--primary);
+      font-size: clamp(22px, 3vw, 30px);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .dashboard-title p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .dashboard-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .dashboard-filter {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff8e8;
+      color: var(--primary);
+      font-weight: 800;
+    }
+
+    .dashboard-filter select {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 9px 10px;
+      font: inherit;
+      color: var(--text);
+      background: white;
+      outline: none;
+    }
+
+    .dashboard-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .summary-card {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: linear-gradient(135deg, #fff8e8, #ffffff);
+      text-align: center;
+    }
+
+    .summary-card strong {
+      display: block;
+      font-size: 30px;
+      color: var(--primary);
+      line-height: 1;
+    }
+
+    .summary-card span {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .dashboard-list-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: white;
+    }
+
+    .dashboard-table {
+      min-width: 850px;
+    }
+
+    .dashboard-table th {
+      background: #f3e4bd;
+    }
+
+    .status-badge {
+      display: inline-block;
+      min-width: 96px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-weight: 900;
+      color: #2f2416;
+      border: 1px solid rgba(122, 77, 22, 0.2);
+    }
+
+    .status-presente { background: #dff5d8; }
+    .status-tarde { background: #fff2b8; }
+    .status-ausente { background: #ffe0d6; }
+    .status-justificado { background: #d8eef7; }
+
+    .history-box {
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 16px;
+      background: #fff8e8;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .history-box strong {
+      color: var(--primary);
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      padding: 16px 18px;
+      border-left: 5px solid var(--secondary);
+      border-radius: 14px;
+      background: #fff8e8;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 14px;
+      }
+
+      .hero {
+        padding: 28px 18px 22px;
+      }
+
+      .toolbar {
+        align-items: stretch;
+      }
+
+      .buttons, .toolbar .hint {
+        width: 100%;
+      }
+
+      button {
+        flex: 1;
+      }
+
+      .table-wrap {
+        display: none;
+      }
+
+      .cards {
+        display: grid;
+      }
+    }
+
+    @media print {
+      body {
+        padding: 0;
+        background: white;
+      }
+
+      .panel {
+        box-shadow: none;
+        border: none;
+        border-radius: 0;
+      }
+
+      .toolbar {
+        display: none;
+      }
+
+      .content {
+        padding: 16px;
+      }
+
+      .table-wrap {
+        display: block;
+        border-radius: 0;
+      }
+
+      table {
+        min-width: auto;
+      }
+
+      input {
+        box-shadow: none !important;
+      }
+
+      .person-cell,
+      .name-input,
+      .service-card li,
+      .color-picker {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .cards {
+        display: none;
+      }
+
+      .footer-note {
+        border: 1px solid var(--line);
+      }
+
+      body.pdf-dashboard-mode {
+        padding: 0;
+        background: white;
+      }
+
+      body.pdf-dashboard-mode .hero,
+      body.pdf-dashboard-mode .toolbar,
+      body.pdf-dashboard-mode .table-wrap,
+      body.pdf-dashboard-mode .cards,
+      body.pdf-dashboard-mode .attendance-section,
+      body.pdf-dashboard-mode .footer-note {
+        display: none !important;
+      }
+
+      body.pdf-dashboard-mode .panel,
+      body.pdf-dashboard-mode .content,
+      body.pdf-dashboard-mode .dashboard-section {
+        margin: 0;
+        padding: 12px;
+        border: none;
+        box-shadow: none;
+        border-radius: 0;
+      }
+
+      body.pdf-dashboard-mode .dashboard-actions {
+        display: none !important;
+      }
+
+      body.pdf-dashboard-mode .dashboard-section::before {
+        content: "Clínica Celestial - Dashboard de asistencia";
+        display: block;
+        text-align: center;
+        margin-bottom: 12px;
+        color: var(--primary);
+        font-size: 24px;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      body.pdf-dashboard-mode .dashboard-table,
+      body.pdf-dashboard-mode table {
+        min-width: auto;
+        width: 100%;
+      }
+
+      body.pdf-dashboard-mode .dashboard-cards,
+      body.pdf-dashboard-mode .summary-card,
+      body.pdf-dashboard-mode .status-badge {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="panel">
+      <div class="hero">
+        <div class="church-icon">✝</div>
+        <h1 id="churchName" class="editable-title" contenteditable="true">Clínica Celestial</h1>
+        <p id="subtitle" class="editable-title" contenteditable="true">Cronograma semanal de servicios - Clínica Celestial</p>
+      </div>
+
+      <div class="toolbar">
+        <div class="hint">Haz clic en las fechas, días, nombres o lista de asistencia para editarlos. Usa la paleta de color junto a cada nombre para personalizarlo. Luego presiona <strong>Guardar cambios</strong>.</div>
+        <div class="buttons">
+          <button type="button" onclick="saveSchedule()">Guardar cambios</button>
+          <button type="button" class="secondary" onclick="window.print()">Imprimir / PDF</button>
+          <button type="button" class="danger" onclick="resetSchedule()">Restablecer</button>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="table-wrap">
+          <table aria-label="Cronograma semanal de servicios">
+            <thead>
+              <tr>
+                <th class="activity">Fecha</th>
+                <th class="date-cell"><input class="date-input" data-key="date-0" value="12" /></th>
+                <th class="date-cell"><input class="date-input" data-key="date-1" value="14" /></th>
+                <th class="date-cell"><input class="date-input" data-key="date-2" value="16" /></th>
+                <th class="date-cell"><input class="date-input" data-key="date-3" value="17" /></th>
+              </tr>
+              <tr>
+                <th class="activity">Día</th>
+                <th><input class="day-input" data-key="day-0" value="Martes" /></th>
+                <th><input class="day-input" data-key="day-1" value="Jueves" /></th>
+                <th><input class="day-input" data-key="day-2" value="Sábado" /></th>
+                <th><input class="day-input" data-key="day-3" value="Domingo" /></th>
+              </tr>
+            </thead>
+            <tbody id="scheduleBody"></tbody>
+          </table>
+        </div>
+
+        <div id="cards" class="cards" aria-label="Vista móvil del cronograma"></div>
+
+        <section class="attendance-section" aria-label="Lista de asistencia">
+          <div class="attendance-header">
+            <div class="attendance-title">
+              <h2>Lista de asistencia</h2>
+              <p>Un solo cuadrante para escoger el usuario de cada servicio y guardar la asistencia.</p>
+            </div>
+            <label class="attendance-date-box">
+              Fecha actualizada:
+              <input id="attendanceDate" type="date" />
+            </label>
+          </div>
+
+          <div class="attendance-tools">
+            <button type="button" onclick="saveAttendanceRecord()">Guardar registro en dashboard</button>
+            <button type="button" class="secondary" onclick="clearServiceRegister()">Limpiar registro</button>
+          </div>
+
+          <div id="attendanceBody" class="attendance-card"></div>
+        </section>
+
+        <section class="dashboard-section" aria-label="Dashboard de asistencia">
+          <div class="dashboard-header">
+            <div class="dashboard-title">
+              <h2>Dashboard de asistencia</h2>
+              <p>Resumen del último registro guardado y lista filtrada según el estado de asistencia.</p>
+            </div>
+            <div class="dashboard-actions">
+              <label class="dashboard-filter">
+                Ver lista:
+                <select id="attendanceFilter" onchange="renderDashboard()">
+                  <option value="Todos">Todos</option>
+                  <option value="Presente">Presentes</option>
+                  <option value="Tarde">Tarde</option>
+                  <option value="Ausente">Ausentes</option>
+                  <option value="Justificado">Justificados</option>
+                </select>
+              </label>
+              <button type="button" onclick="generateDashboardPDF()">Generar PDF del dashboard</button>
+            </div>
+          </div>
+
+          <div id="dashboardCards" class="dashboard-cards"></div>
+
+          <div class="dashboard-list-wrap">
+            <table class="dashboard-table" aria-label="Lista del dashboard de asistencia">
+              <thead>
+                <tr>
+                  <th>N°</th>
+                  <th>Fecha</th>
+                  <th>Servicio</th>
+                  <th>Usuario elegido</th>
+                  <th>Asistencia</th>
+                  <th>Observación</th>
+                </tr>
+              </thead>
+              <tbody id="dashboardBody"></tbody>
+            </table>
+          </div>
+
+          <div id="historyBox" class="history-box"></div>
+        </section>
+
+        <div class="footer-note">
+          “Cada servicio es una oportunidad para servir con orden, amor y compromiso.”<br />
+          Puedes actualizar este cronograma semanalmente y guardarlo desde el navegador.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "cronogramaClinicaCelestial";
+    const serviceActivities = ["Dirección", "Lectura", "Cánticos", "Alabanzas", "Mensaje"];
+
+    const defaultSchedule = {
+      churchName: "Clínica Celestial",
+      subtitle: "Cronograma semanal de servicios - Clínica Celestial",
+      dates: ["12", "14", "16", "17"],
+      days: ["Martes", "Jueves", "Sábado", "Domingo"],
+      rows: [
+        { activity: "Dirección", values: ["Hna. Zulma", "Hno. Jose", "Hna. Carmen", "Hno. Jose"] },
+        { activity: "Lectura", values: ["Hna. Thalia", "Hno. Fredy", "Hna. Thalia", "Hna. Sixta"] },
+        { activity: "Cánticos", values: ["Hna. Carmen", "Hna. Fely", "Hna. Zulma", "Hna. Carmen"] },
+        { activity: "Alabanzas", values: ["Hno. Ever", "Hno. Ever", "Hno. Ever", "Hno. Ever"] },
+        { activity: "Mensaje", values: ["Ps. Lucio", "Ps. Lucio", "Hna. Sixta", "Ps. Lucio"] }
+      ]
+    };
+
+    const personPalettes = [
+      "#fff2b8", "#dff5d8", "#d8eef7", "#f4ddff", "#ffe0d6",
+      "#e6e1ff", "#d8f5ed", "#ffe2ef", "#e8f0c9", "#f3e2c7"
+    ];
+
+    const fixedPersonColors = {
+      zulma: "#d8eef7"
+    };
+
+    let customPersonColors = {};
+    let attendance = createDefaultAttendance();
+    let attendanceHistory = [];
+    let schedule = loadData();
+
+    function cloneData(data) {
+      return JSON.parse(JSON.stringify(data));
+    }
+
+    function getTodayInputValue() {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, "0");
+      const day = String(today.getDate()).padStart(2, "0");
+      return year + "-" + month + "-" + day;
+    }
+
+    function formatDate(dateValue) {
+      if (!dateValue) return "Sin fecha";
+      const parts = dateValue.split("-");
+      if (parts.length !== 3) return dateValue;
+      return parts[2] + "/" + parts[1] + "/" + parts[0];
+    }
+
+    function createDefaultAttendance() {
+      return {
+        date: getTodayInputValue(),
+        rows: serviceActivities.map(activity => ({
+          activity: activity,
+          name: "",
+          status: "Presente",
+          observation: ""
+        }))
+      };
+    }
+
+    function normalizeAttendanceData(data) {
+      if (!data || !Array.isArray(data.rows)) return createDefaultAttendance();
+
+      return {
+        date: data.date || getTodayInputValue(),
+        rows: serviceActivities.map(activity => {
+          const found = data.rows.find(row => row.activity === activity);
+          return {
+            activity: activity,
+            name: found?.name || "",
+            status: found?.status || "Presente",
+            observation: found?.observation || found?.role || found?.signature || ""
+          };
+        })
+      };
+    }
+
+    function loadData() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return cloneData(defaultSchedule);
+
+      try {
+        const parsed = JSON.parse(saved);
+
+        if (parsed.schedule) {
+          customPersonColors = parsed.customPersonColors || {};
+          attendance = normalizeAttendanceData(parsed.attendance);
+          attendanceHistory = parsed.attendanceHistory || [];
+          return parsed.schedule;
+        }
+
+        attendance = createDefaultAttendance();
+        attendanceHistory = [];
+        return parsed;
+      } catch (error) {
+        attendance = createDefaultAttendance();
+        attendanceHistory = [];
+        return cloneData(defaultSchedule);
+      }
+    }
+
+    function persistData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        schedule: schedule,
+        customPersonColors: customPersonColors,
+        attendance: attendance,
+        attendanceHistory: attendanceHistory
+      }));
+    }
+
+    function normalizePersonName(value) {
+      return String(value || "")
+        .toLowerCase()
+        .replace(/hna|hno|ps|pastor|hermana|hermano/gi, "")
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-z0-9]/g, "")
+        .trim();
+    }
+
+    function getDisplayName(value) {
+      return String(value || "").trim().split(" ").filter(Boolean).join(" ");
+    }
+
+    function getUniqueUsers() {
+      const map = new Map();
+      schedule.rows.forEach(row => {
+        row.values.forEach(value => {
+          const cleanName = getDisplayName(value);
+          const key = normalizePersonName(cleanName);
+          if (key && !map.has(key)) map.set(key, cleanName);
+        });
+      });
+      return Array.from(map.values()).sort((a, b) => a.localeCompare(b, "es"));
+    }
+
+    function hexToRgb(hex) {
+      const clean = hex.replace("#", "");
+      const value = parseInt(clean, 16);
+      return {
+        r: (value >> 16) & 255,
+        g: (value >> 8) & 255,
+        b: value & 255
+      };
+    }
+
+    function rgbToHex(r, g, b) {
+      return "#" + [r, g, b]
+        .map(value => Math.max(0, Math.min(255, value)).toString(16).padStart(2, "0"))
+        .join("");
+    }
+
+    function shadeColor(hex, amount) {
+      const rgb = hexToRgb(hex);
+      return rgbToHex(rgb.r + amount, rgb.g + amount, rgb.b + amount);
+    }
+
+    function makeRing(hex) {
+      const rgb = hexToRgb(hex);
+      return "rgba(" + rgb.r + ", " + rgb.g + ", " + rgb.b + ", 0.38)";
+    }
+
+    function getDefaultColorByName(value) {
+      const normalized = normalizePersonName(value);
+      if (!normalized) return personPalettes[0];
+      if (fixedPersonColors[normalized]) return fixedPersonColors[normalized];
+
+      let hash = 0;
+      for (let index = 0; index < normalized.length; index++) {
+        hash = normalized.charCodeAt(index) + ((hash << 5) - hash);
+      }
+
+      return personPalettes[Math.abs(hash) % personPalettes.length];
+    }
+
+    function getPersonColor(value) {
+      const normalized = normalizePersonName(value);
+      return customPersonColors[normalized] || getDefaultColorByName(value);
+    }
+
+    function applyPersonColor(element, value) {
+      const color = getPersonColor(value);
+      element.style.setProperty("--person-bg", color);
+      element.style.setProperty("--person-border", shadeColor(color, -55));
+      element.style.setProperty("--person-ring", makeRing(color));
+    }
+
+    function updateColorForPerson(nameValue, color) {
+      const normalized = normalizePersonName(nameValue);
+      if (!normalized) return;
+
+      customPersonColors[normalized] = color;
+      renderSchedule();
+    }
+
+    function renderSchedule() {
+      document.getElementById("churchName").textContent = schedule.churchName;
+      document.getElementById("subtitle").textContent = schedule.subtitle;
+
+      schedule.dates.forEach((date, index) => {
+        document.querySelector(`[data-key="date-${index}"]`).value = date;
+      });
+
+      schedule.days.forEach((day, index) => {
+        document.querySelector(`[data-key="day-${index}"]`).value = day;
+      });
+
+      const body = document.getElementById("scheduleBody");
+      body.innerHTML = "";
+
+      schedule.rows.forEach((row, rowIndex) => {
+        const tr = document.createElement("tr");
+        if (row.activity === "Mensaje") tr.classList.add("message-row");
+
+        const activity = document.createElement("td");
+        activity.className = "activity";
+        activity.textContent = row.activity + ":";
+        tr.appendChild(activity);
+
+        row.values.forEach((value, columnIndex) => {
+          const td = document.createElement("td");
+          td.className = "person-cell";
+          applyPersonColor(td, value);
+
+          const field = document.createElement("div");
+          field.className = "person-field";
+
+          const input = document.createElement("input");
+          input.className = "name-input";
+          input.value = value;
+          input.setAttribute("data-row", rowIndex);
+          input.setAttribute("data-column", columnIndex);
+          applyPersonColor(input, value);
+          input.addEventListener("input", event => {
+            const currentValue = event.target.value;
+            schedule.rows[rowIndex].values[columnIndex] = currentValue.trim();
+            applyPersonColor(td, currentValue);
+            applyPersonColor(event.target, currentValue);
+            picker.value = getPersonColor(currentValue);
+            renderCards();
+            renderAttendance();
+          });
+
+          const picker = document.createElement("input");
+          picker.type = "color";
+          picker.className = "color-picker";
+          picker.title = "Cambiar color de " + value;
+          picker.value = getPersonColor(value);
+          applyPersonColor(picker, value);
+          picker.addEventListener("input", event => {
+            updateFromInputs();
+            updateColorForPerson(input.value, event.target.value);
+          });
+
+          field.appendChild(input);
+          field.appendChild(picker);
+          td.appendChild(field);
+          tr.appendChild(td);
+        });
+
+        body.appendChild(tr);
+      });
+
+      renderCards();
+      renderAttendance();
+      renderDashboard();
+      connectHeaderInputs();
+    }
+
+    function renderCards() {
+      const cards = document.getElementById("cards");
+      cards.innerHTML = "";
+
+      schedule.days.forEach((day, columnIndex) => {
+        const card = document.createElement("article");
+        card.className = "service-card";
+
+        const header = document.createElement("header");
+        header.innerHTML = `<h3>${day}</h3><small>Fecha: ${schedule.dates[columnIndex]}</small>`;
+        card.appendChild(header);
+
+        const list = document.createElement("ul");
+        schedule.rows.forEach(row => {
+          const item = document.createElement("li");
+          item.className = "person-card-item";
+          applyPersonColor(item, row.values[columnIndex]);
+          item.innerHTML = `<strong>${row.activity}</strong><span>${row.values[columnIndex]}</span>`;
+          list.appendChild(item);
+        });
+
+        card.appendChild(list);
+        cards.appendChild(card);
+      });
+    }
+
+    function renderAttendance() {
+      const dateInput = document.getElementById("attendanceDate");
+      const attendanceBody = document.getElementById("attendanceBody");
+      if (!dateInput || !attendanceBody) return;
+
+      dateInput.value = attendance.date || getTodayInputValue();
+      attendanceBody.innerHTML = "";
+      const users = getUniqueUsers();
+
+      attendance.rows.forEach((row, index) => {
+        const rowElement = document.createElement("div");
+        rowElement.className = "attendance-card-row";
+        rowElement.setAttribute("data-index", index);
+
+        const options = ["", ...users].map(user => {
+          const selected = user === row.name ? "selected" : "";
+          const label = user || "Seleccionar usuario";
+          return `<option value="${escapeAttribute(user)}" ${selected}>${escapeHtml(label)}</option>`;
+        }).join("");
+
+        rowElement.innerHTML = `
+          <div class="attendance-activity-label">${row.activity}:</div>
+          <select class="attendance-select attendance-name">${options}</select>
+          <select class="attendance-select attendance-status">
+            <option value="Presente" ${row.status === "Presente" ? "selected" : ""}>Presente</option>
+            <option value="Tarde" ${row.status === "Tarde" ? "selected" : ""}>Tarde</option>
+            <option value="Ausente" ${row.status === "Ausente" ? "selected" : ""}>Ausente</option>
+            <option value="Justificado" ${row.status === "Justificado" ? "selected" : ""}>Justificado</option>
+          </select>
+          <input class="attendance-input attendance-observation" value="${escapeAttribute(row.observation)}" placeholder="Observación opcional" />
+        `;
+
+        attendanceBody.appendChild(rowElement);
+      });
+
+      document.querySelectorAll(".attendance-input, .attendance-select, #attendanceDate").forEach(input => {
+        input.removeEventListener("input", updateAttendanceFromInputs);
+        input.removeEventListener("change", updateAttendanceFromInputs);
+        input.addEventListener("input", updateAttendanceFromInputs);
+        input.addEventListener("change", updateAttendanceFromInputs);
+      });
+    }
+
+    function renderDashboard() {
+      const dashboardCards = document.getElementById("dashboardCards");
+      const dashboardBody = document.getElementById("dashboardBody");
+      const historyBox = document.getElementById("historyBox");
+      const filter = document.getElementById("attendanceFilter")?.value || "Todos";
+      if (!dashboardCards || !dashboardBody || !historyBox) return;
+
+      const latestRecord = attendanceHistory[0];
+      const rows = latestRecord?.rows || [];
+      const counters = {
+        Presente: rows.filter(row => row.status === "Presente").length,
+        Tarde: rows.filter(row => row.status === "Tarde").length,
+        Ausente: rows.filter(row => row.status === "Ausente").length,
+        Justificado: rows.filter(row => row.status === "Justificado").length
+      };
+      const total = rows.length;
+
+      dashboardCards.innerHTML = `
+        <div class="summary-card"><strong>${total}</strong><span>Total registrados</span></div>
+        <div class="summary-card"><strong>${counters.Presente}</strong><span>Presentes</span></div>
+        <div class="summary-card"><strong>${counters.Tarde}</strong><span>Tarde</span></div>
+        <div class="summary-card"><strong>${counters.Ausente}</strong><span>Ausentes</span></div>
+        <div class="summary-card"><strong>${counters.Justificado}</strong><span>Justificados</span></div>
+      `;
+
+      const filteredRows = filter === "Todos" ? rows : rows.filter(row => row.status === filter);
+      dashboardBody.innerHTML = "";
+
+      if (!latestRecord || filteredRows.length === 0) {
+        dashboardBody.innerHTML = `
+          <tr>
+            <td colspan="6">Todavía no hay registros guardados para mostrar. Completa el cuadrante y presiona <strong>Guardar registro en dashboard</strong>.</td>
+          </tr>
+        `;
+      } else {
+        filteredRows.forEach((row, index) => {
+          const statusClass = "status-" + row.status.toLowerCase();
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td class="attendance-number">${index + 1}</td>
+            <td>${formatDate(latestRecord.date)}</td>
+            <td>${escapeHtml(row.activity)}</td>
+            <td>${escapeHtml(row.name)}</td>
+            <td><span class="status-badge ${statusClass}">${row.status}</span></td>
+            <td>${escapeHtml(row.observation)}</td>
+          `;
+          dashboardBody.appendChild(tr);
+        });
+      }
+
+      const savedCount = attendanceHistory.length;
+      const lastSavedText = latestRecord
+        ? `Último registro guardado: <strong>${formatDate(latestRecord.date)}</strong> con <strong>${latestRecord.rows.length}</strong> servicios registrados.`
+        : "Aún no se ha guardado ningún registro de asistencia.";
+
+      historyBox.innerHTML = `${lastSavedText}<br>Total de registros guardados en este navegador: <strong>${savedCount}</strong>.`;
+    }
+
+    function escapeAttribute(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function updateAttendanceFromInputs() {
+      const dateInput = document.getElementById("attendanceDate");
+      attendance.date = dateInput?.value || getTodayInputValue();
+
+      attendance.rows = Array.from(document.querySelectorAll(".attendance-card-row")).map(row => {
+        const index = Number(row.dataset.index);
+        return {
+          activity: serviceActivities[index],
+          name: row.querySelector(".attendance-name")?.value.trim() || "",
+          status: row.querySelector(".attendance-status")?.value || "Presente",
+          observation: row.querySelector(".attendance-observation")?.value.trim() || ""
+        };
+      });
+    }
+
+    function clearServiceRegister() {
+      attendance = createDefaultAttendance();
+      renderAttendance();
+    }
+
+    function addAttendanceRow() {
+      renderAttendance();
+    }
+
+    function removeAttendanceRow() {
+      renderAttendance();
+    }
+
+    function saveAttendanceRecord() {
+      updateFromInputs();
+      updateAttendanceFromInputs();
+
+      const validRows = attendance.rows.filter(row => row.name.trim());
+
+      if (validRows.length === 0) {
+        alert("Primero selecciona al menos un usuario en el cuadrante de asistencia.");
+        return;
+      }
+
+      const newRecord = {
+        id: Date.now(),
+        date: attendance.date || getTodayInputValue(),
+        createdAt: new Date().toISOString(),
+        rows: validRows
+      };
+
+      attendanceHistory.unshift(newRecord);
+      persistData();
+      renderDashboard();
+      alert("Registro guardado en el dashboard correctamente.");
+    }
+
+    function generateDashboardPDF() {
+      updateFromInputs();
+      updateAttendanceFromInputs();
+
+      if (attendanceHistory.length === 0) {
+        const shouldSave = confirm("Aún no hay un registro guardado en el dashboard. ¿Deseas guardar el registro actual antes de generar el PDF?");
+        if (!shouldSave) return;
+
+        const validRows = attendance.rows.filter(row => row.name.trim());
+        if (validRows.length === 0) {
+          alert("Primero selecciona al menos un usuario en el cuadrante de asistencia.");
+          return;
+        }
+
+        attendanceHistory.unshift({
+          id: Date.now(),
+          date: attendance.date || getTodayInputValue(),
+          createdAt: new Date().toISOString(),
+          rows: validRows
+        });
+        persistData();
+      }
+
+      renderDashboard();
+      const previousTitle = document.title;
+      const latestRecord = attendanceHistory[0];
+      document.title = "Dashboard_Asistencia_Clinica_Celestial_" + (latestRecord?.date || getTodayInputValue());
+      document.body.classList.add("pdf-dashboard-mode");
+
+      setTimeout(() => {
+        window.print();
+        document.body.classList.remove("pdf-dashboard-mode");
+        document.title = previousTitle;
+      }, 150);
+    }
+
+    function connectHeaderInputs() {
+      document.querySelectorAll(".date-input, .day-input").forEach(input => {
+        input.removeEventListener("input", updateFromInputs);
+        input.addEventListener("input", updateFromInputs);
+      });
+
+      document.getElementById("churchName").addEventListener("input", updateFromInputs);
+      document.getElementById("subtitle").addEventListener("input", updateFromInputs);
+    }
+
+    function updateFromInputs() {
+      schedule.churchName = document.getElementById("churchName").textContent.trim() || "Clínica Celestial";
+      schedule.subtitle = document.getElementById("subtitle").textContent.trim() || "Cronograma semanal de servicios - Clínica Celestial";
+
+      schedule.dates = Array.from(document.querySelectorAll(".date-input")).map(input => input.value.trim());
+      schedule.days = Array.from(document.querySelectorAll(".day-input")).map(input => input.value.trim());
+
+      document.querySelectorAll(".name-input").forEach(input => {
+        const row = Number(input.dataset.row);
+        const column = Number(input.dataset.column);
+        schedule.rows[row].values[column] = input.value.trim();
+      });
+
+      updateAttendanceFromInputs();
+      renderCards();
+    }
+
+    function saveSchedule() {
+      updateFromInputs();
+      updateAttendanceFromInputs();
+      persistData();
+      renderDashboard();
+      alert("Cronograma, colores y cuadrante de asistencia guardados correctamente.");
+    }
+
+    function resetSchedule() {
+      const confirmation = confirm("¿Deseas restablecer el cronograma original, el cuadrante de asistencia y el dashboard?");
+      if (!confirmation) return;
+
+      schedule = cloneData(defaultSchedule);
+      attendance = createDefaultAttendance();
+      attendanceHistory = [];
+      customPersonColors = {};
+      localStorage.removeItem(STORAGE_KEY);
+      renderSchedule();
+    }
+
+    renderSchedule();
+  </script>
+</body>
+</html>
